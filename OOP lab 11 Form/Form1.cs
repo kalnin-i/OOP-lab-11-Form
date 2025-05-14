@@ -1,17 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
 
 namespace OOP_lab_11_Form
 {
     public partial class Form1 : Form
     {
+        private Wolf[] wolves = new Wolf[4];
+        bool IsNull(Wolf w) => w == null;
+
         public Form1()
         {
             InitializeComponent();
@@ -19,55 +16,125 @@ namespace OOP_lab_11_Form
 
         private void button1_Click(object sender, EventArgs e)
         {
-            Wolf wolf = new Wolf(45.5, 5, 150.0, "Сірий вовк", "Тайга");
-            label1.Text = wolf.GetInfo();
+            try
+            {
+                wolves[0] = new Wolf(50, 3, 200, "Альфа", "Ліс");
+                wolves[1] = new Wolf(45, 4, 180, "Бета", "Тайга");
+                DisplayWolves();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка під час створення: {ex.Message}", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
-        private void button2_Click(object sender, EventArgs e)
+        private void DisplayWolves()
         {
-            label2.Visible = true;
+            label1.Text = string.Join("\n\n", wolves.Where(w => w != null).Select(w => w.GetInfo()));
+            label1.Refresh();
         }
 
-        private void Form1_DoubleClick(object sender, EventArgs e)
+        private void button2_Click_1(object sender, EventArgs e)
         {
-            button2.Visible = true;
+            try
+            {
+                if (wolves[0] == null || wolves[1] == null)
+                {
+                    MessageBox.Show("Спочатку створіть об'єкти (Кнопка 1).", "Попередження", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                wolves[2] = (Wolf)wolves[0].Clone();
+                wolves[3] = (Wolf)wolves[1].Clone();
+                DisplayWolves();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка під час клонування: {ex.Message}", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void button3_Click_1(object sender, EventArgs e)
+        {
+            try
+            {
+                if (wolves.Any(IsNull))
+                {
+                    MessageBox.Show("Створіть і клонуйте всі об'єкти (Кнопки 1 і 2).", "Попередження", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                Array.Sort(wolves);
+                DisplayWolves();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Помилка під час сортування: {ex.Message}", "Помилка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 
-    public class Animal
+    public interface IAnimalInfo
     {
-        protected double weight;
-        protected int age;
-        protected double costPerDay;
+        string GetInfo();
+    }
 
+    public class Animal : IAnimalInfo, IComparable<Animal>, ICloneable
+    {
         public Animal(double weight, int age, double costPerDay)
         {
-            this.weight = weight;
-            this.age = age;
-            this.costPerDay = costPerDay;
+            if (weight < 0 || age < 0 || costPerDay < 0)
+                throw new ArgumentException("Параметри тварини не можуть бути від’ємними.");
+
+            Weight = weight;
+            Age = age;
+            CostPerDay = costPerDay;
         }
 
-        public virtual string GetInfo()
+        public double Weight { get; protected set; }
+        public int Age { get; protected set; }
+        public double CostPerDay { get; protected set; }
+
+        public virtual string GetInfo() =>
+            $"Тварина: Вага = {Weight} кг, Вік = {Age} років, Вартість утримання = {CostPerDay} грн/день";
+
+        public virtual object Clone()
         {
-            return $"Тварина: Вага = {weight} кг, Вік = {age} років, Вартість утримання = {costPerDay} грн/день";
+            return new Animal(Weight, Age, CostPerDay);
+        }
+
+        public int CompareTo(Animal other)
+        {
+            if (other == null) return 1;
+            return CostPerDay.CompareTo(other.CostPerDay);
         }
     }
 
-    public class Wolf : Animal
+    public class Wolf : Animal, IComparable<Wolf>, ICloneable
     {
-        private string breed;
-        private string habitat;
+        private string _breed;
+        private string _habitat;
 
         public Wolf(double weight, int age, double costPerDay, string breed, string habitat)
             : base(weight, age, costPerDay)
         {
-            this.breed = breed;
-            this.habitat = habitat;
+            _breed = breed ?? throw new ArgumentNullException(nameof(breed));
+            _habitat = habitat ?? throw new ArgumentNullException(nameof(habitat));
         }
 
         public override string GetInfo()
         {
-            return base.GetInfo() + $"\nПорода вовка: {breed}, Природна локація: {habitat}";
+            return base.GetInfo() + $"\nПорода вовка: {_breed}, Природна локація: {_habitat}";
+        }
+
+        public override object Clone()
+        {
+            return new Wolf(Weight, Age, CostPerDay, _breed, _habitat);
+        }
+
+        public int CompareTo(Wolf other)
+        {
+            return base.CompareTo(other);
         }
     }
 }
